@@ -44,7 +44,7 @@ class CXRModel(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
         x = self.fc(x)
-        return nn.functional.softplus(x)
+        return x
 
 if __name__ == "__main__":
     model = CXRModel()
