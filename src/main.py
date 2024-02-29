@@ -37,6 +37,7 @@ class LitModule(L.LightningModule):
         y_hat = self.model(tab, img)
         loss = self.loss(y_hat, y)
         if self.task == "classification":
+            y_hat = nn.functional.sigmoid(y_hat)
             self.log_dict({"val_loss": loss, "val_accuracy": ((y_hat > self.th) == y.bool()).float().mean()}, on_epoch=True, on_step=False, sync_dist=True)
         if self.task == "regression":
             self.log_dict({"val_loss": loss, "val_mae": torch.mean(torch.abs(y_hat - y))}, on_epoch=True, on_step=False, sync_dist=True)

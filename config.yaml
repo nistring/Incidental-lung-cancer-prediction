@@ -41,7 +41,7 @@ trainer:
   reload_dataloaders_every_n_epochs: 0
   default_root_dir: null
 model:
-  lr: 1.0e-2
+  lr: 1.0e-3
   step_size: 5
   gamma: 0.2
   task: "classification"
