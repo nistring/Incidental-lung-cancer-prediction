@@ -33,6 +33,7 @@ class CXRModel(nn.Module):
         self.layer3 = HiddenLayer(64, 32)
         self.layer4 = HiddenLayer(32, 32)
         self.fc = nn.Linear(32, 1)
+        self.sig = nn.Sigmoid()
 
     def forward(self, tab, img):
         tab = self.layer1(tab)
@@ -44,6 +45,7 @@ class CXRModel(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
         x = self.fc(x)
+        x = self.sig(x)
         return x
 
 if __name__ == "__main__":

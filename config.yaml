@@ -41,13 +41,12 @@ trainer:
   reload_dataloaders_every_n_epochs: 0
   default_root_dir: null
 model:
-  lr: 1.0e-3
-  step_size: 5
-  gamma: 0.2
-  task: "classification"
+  lr: 1.0e-4
+  step_size: 1
+  gamma: 0.95
 data:
   data_dir: "data/label"
   batch_size: 256
   num_workers: 47
-  only_smokers: False
-ckpt_path: null
+ckpt_path: "lightning_logs/version_4/checkpoints/epoch=49-step=2800.ckpt"
+verbose: true

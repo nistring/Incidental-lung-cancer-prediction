@@ -22,7 +22,7 @@ train_transforms = v2.Compose([
     v2.Resize(size=(224, 224), antialias=True),
     v2.ToDtype(torch.float32),
     # v2.Normalize(mean=[148.23449176623407], std=[18.071799304221553]), # Smoker
-    v2.Normalize(mean=[148.48609513022734], std=[18.1603103145614]), # All
+    v2.Normalize(mean=[148.48609513022734], std=[18.1603103145614]), # All == 50-80
 ])
 test_transforms = v2.Compose([
     v2.Grayscale(1),
@@ -34,71 +34,61 @@ test_transforms = v2.Compose([
 
 
 class PLCO(Dataset):
-    def __init__(self, transforms, csv_path, only_smokers):
+    def __init__(self, transforms: v2, csv_path: str) -> None:
         """_summary_
 
         Args:
-            transforms (_type_): _description_
-            csv_path (_type_): _description_
-            only_smokers (bool, optional): _description_. Defaults to True.
+            transforms (v2): _description_
+            csv_path (str): _description_
         """
+
         # Transforms
         self.transforms = transforms
         # Read the csv file
-        self.data_info = pd.read_csv(csv_path) # plco_id/pack_year/sex/age
-        self.data_info["cig_stat"] = self.data_info["pack_years"] > 0
-        self.only_smokers = only_smokers
-        if only_smokers:
-            self.data_info = self.data_info[self.data_info["cig_stat"]]
+        self.data_info = pd.read_csv(csv_path) # plco_id/cig_stop/pack_year/sex/age
+        self.data_info["eligible"] = (self.data_info["pack_years"] >= 20.) & (self.data_info["cig_stop"] <= 15.)
 
     def __getitem__(self, index):
-        # Get image name from the pandas df
         data = self.data_info.iloc[index]
-        # pack_years,sex,age,image_file_name = 
-        # Open image
-        # if not isinstance(image_file_name, str):
-        #     print(self.data_info.iloc[index])
         img = read_image(str(Path('data/image') / data["image_file_name"]))
         tab = torch.FloatTensor([data["sex"] - 1, data["age"]]) # 0: Man, 1: Woman
 
-        if self.only_smokers:
-            return (tab, self.transforms(img)), torch.FloatTensor([data["pack_years"]])
-        else:
-            return (tab, self.transforms(img)), torch.FloatTensor([data["cig_stat"]])
+        return (tab, self.transforms(img)), torch.FloatTensor([data["eligible"]])
 
     def __len__(self):
         return len(self.data_info.index)
     
     def weights(self):
-        assert self.only_smokers is False
-        # 22920(non) / 34059(smokers)
-        return (1./self.data_info.groupby('cig_stat')['cig_stat'].transform('count')).to_numpy()
+        eligible = self.data_info["eligible"].sum()
+        print(f"Eligible : {eligible}") # 15137
+        print(f"Not eligible : {len(self) - eligible}") # 41842
+        # Naive acc : 0.7343
+        return (1./self.data_info.groupby('eligible')['eligible'].transform('count')).to_numpy()
 
 
 class PLCODataModule(L.LightningDataModule):
-    def __init__(self, data_dir: str, batch_size: int, num_workers: int, only_smokers: bool):
+    def __init__(self, data_dir: str, batch_size: int, num_workers: int):
         super().__init__()
         self.data_dir = Path(data_dir)
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.only_smokers = only_smokers
         
     def train_dataloader(self):
-        dataset = PLCO(train_transforms, self.data_dir / "train.csv", only_smokers=self.only_smokers)
+        dataset = PLCO(train_transforms, self.data_dir / "train.csv")
         weights = dataset.weights()
-        sampler = None if self.only_smokers else WeightedRandomSampler(weights=weights, num_samples=len(weights))
-        return DataLoader(dataset, batch_size=self.batch_size, shuffle=True if sampler is None else False, num_workers=self.num_workers, pin_memory=True, sampler=sampler)
+        sampler = WeightedRandomSampler(weights=weights, num_samples=len(weights))
+        return DataLoader(dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, pin_memory=True, sampler=sampler)
 
     def val_dataloader(self):
-        return DataLoader(PLCO(test_transforms, self.data_dir / "val.csv", only_smokers=self.only_smokers), batch_size=self.batch_size, num_workers=self.num_workers, pin_memory=True)
+        return DataLoader(PLCO(test_transforms, self.data_dir / "val.csv"), batch_size=self.batch_size, num_workers=self.num_workers, pin_memory=True)
 
     def test_dataloader(self):
-        return DataLoader(PLCO(test_transforms, self.data_dir / "test.csv", only_smokers=self.only_smokers), batch_size=self.batch_size, num_workers=self.num_workers, pin_memory=True)
+        return DataLoader(PLCO(test_transforms, self.data_dir / "test.csv"), batch_size=self.batch_size, num_workers=self.num_workers, pin_memory=True)
 
 if __name__ == "__main__":
     # Call dataset
     paths = pd.read_csv("data/label/train.csv")
-    # paths = paths[paths["pack_years"] > 0] # smoker
+    paths = paths[(paths["age"] >= 50) & (paths["age"] <= 80)] # 50-80
     paths = paths["image_file_name"].values.tolist()
     transforms = v2.Compose([
         v2.Grayscale(1),
