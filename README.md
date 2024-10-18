@@ -1,2 +1,3 @@
-# CXR
-Incidental lung cancer prediction from chest x-ray.
+# Incidental lung cancer prediction
+
+This study aims to predict the likelihood of future lung cancer for individuals with a smoking history of more than 20 pack years. The goal is to identify candidates who may require further evaluation, such as a chest CT scan, to detect lung cancer. We attempted to create a predictive model using the (CXR-LC model)[https://github.com/circ-ml/CXR-LC] and the (PLCO dataset)[https://cdas.cancer.gov/datasets/plco/21/]. However, we faced challenges due to the low quality of chest X-ray images, and it may inherently be challenging to estimate future lung cancer events based solely on chest X-ray images and demographic information.
