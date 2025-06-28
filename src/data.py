@@ -77,7 +77,7 @@ class PLCODataModule(L.LightningDataModule):
         dataset = PLCO(train_transforms, self.data_dir / "train.csv")
         weights = dataset.weights()
         sampler = WeightedRandomSampler(weights=weights, num_samples=len(weights))
-        return DataLoader(dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, pin_memory=True, sampler=sampler)
+        return DataLoader(dataset, batch_size=self.batch_size, num_workers=self.num_workers, pin_memory=True, sampler=sampler)
 
     def val_dataloader(self):
         return DataLoader(PLCO(test_transforms, self.data_dir / "val.csv"), batch_size=self.batch_size, num_workers=self.num_workers, pin_memory=True)

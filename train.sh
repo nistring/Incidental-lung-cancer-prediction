@@ -1,1 +1,0 @@
-python src/main.py fit --config config.yaml

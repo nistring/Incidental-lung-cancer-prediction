@@ -1,9 +1,9 @@
 # lightning.pytorch==2.2.0.post0
 seed_everything: true
 trainer:
-  accelerator: auto
+  accelerator: "gpu"
   strategy: auto
-  devices: auto
+  devices: 4
   num_nodes: 1
   precision: 32
   logger: null
@@ -43,10 +43,11 @@ trainer:
 model:
   lr: 1.0e-4
   step_size: 1
-  gamma: 0.95
+  gamma: 0.8
+  weight_decay: 1.0e-4
 data:
   data_dir: "data/label"
   batch_size: 256
   num_workers: 47
-ckpt_path: "lightning_logs/version_4/checkpoints/epoch=49-step=2800.ckpt"
-verbose: true
+# ckpt_path: "lightning_logs/version_4/checkpoints/epoch=49-step=2800.ckpt"
+# verbose: true

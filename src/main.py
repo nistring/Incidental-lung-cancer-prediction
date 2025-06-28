@@ -5,7 +5,7 @@ from lightning.pytorch.cli import LightningCLI
 from model import CXRModel
 import torch
 import pandas as pd
-from sklearn.metrics import auc, accuracy_score, precision_recall_curve, RocCurveDisplay, PrecisionRecallDisplay, ConfusionMatrixDisplay
+from sklearn.metrics import precision_recall_curve, RocCurveDisplay, PrecisionRecallDisplay, ConfusionMatrixDisplay
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -13,11 +13,12 @@ torch.set_float32_matmul_precision('high')
 
 # define the LightningModule
 class LitModule(L.LightningModule):
-    def __init__(self, lr, step_size, gamma):
+    def __init__(self, lr, step_size, gamma, weight_decay):
         super().__init__()
         self.lr = lr
         self.step_size = step_size
         self.gamma = gamma
+        self.weight_decay = weight_decay
         self.loss = nn.BCELoss()
         self.model = CXRModel()
         self.th = 0.5
@@ -51,10 +52,10 @@ class LitModule(L.LightningModule):
         self.pred = np.concatenate(self.pred)
 
         # PRC and ROC curve
-        PrecisionRecallDisplay.from_predictions(self.true, self.pred, plot_chance_level=True)
+        PrecisionRecallDisplay.from_predictions(self.true, self.pred, plot_chance_level=True).ax_.set_title("Precision recall curve")
         plt.savefig("results/PRC.png")
-        RocCurveDisplay.from_predictions(self.true, self.pred, plot_chance_level=True)
-        plt.savefig("results/Roc_curve.png")
+        RocCurveDisplay.from_predictions(self.true, self.pred, plot_chance_level=True).ax_.set_title("ROC curve")
+        plt.savefig("results/ROC_curve.png")
 
         # Best threshold
         precision, recall, ths = precision_recall_curve(self.true, self.pred)
@@ -66,11 +67,11 @@ class LitModule(L.LightningModule):
 
         # Confusion matrix
         self.pred = self.pred > th
-        ConfusionMatrixDisplay.from_predictions(self.true, self.pred, cmap=plt.cm.Blues).ax_.set_title(f"Acc = {np.mean(self.true == self.pred) * 100:.2f}%")
+        ConfusionMatrixDisplay.from_predictions(self.true, self.pred, cmap=plt.cm.Blues).ax_.set_title(f"Confusion matrix. Acc = {np.mean(self.true == self.pred) * 100:.2f}%")
         plt.savefig("results/confusion_matrix.png")
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=self.lr)
+        optimizer = optim.Adam(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         scheduler = optim.lr_scheduler.StepLR(optimizer, self.step_size, self.gamma)
         return [optimizer], [scheduler]
 
